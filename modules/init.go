@@ -39,6 +39,7 @@ import (
 	_ "github.com/netdata/go.d.plugin/modules/logind"
 	_ "github.com/netdata/go.d.plugin/modules/logstash"
 	_ "github.com/netdata/go.d.plugin/modules/mongodb"
+	_ "github.com/netdata/go.d.plugin/modules/msgmonsys"
 	_ "github.com/netdata/go.d.plugin/modules/mysql"
 	_ "github.com/netdata/go.d.plugin/modules/nginx"
 	_ "github.com/netdata/go.d.plugin/modules/nginxplus"
