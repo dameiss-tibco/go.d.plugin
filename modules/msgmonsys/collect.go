@@ -3,9 +3,6 @@
 package msgmonsys
 
 import (
-	// "errors"
-	// "strings"
-
 	"github.com/netdata/go.d.plugin/pkg/prometheus"
 	"github.com/netdata/go.d.plugin/pkg/stm"
 )
@@ -21,10 +18,6 @@ func (p *MsgmonSys) collect() (map[string]int64, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// p.once.Do(func() {
-	// 	p.adjustCharts(pms)
-	// })
 
 	mx := p.collectMetrics(pms)
 	p.updateCharts()
@@ -112,10 +105,77 @@ func findMsgmonSysMetrics(pms prometheus.Series) prometheus.Series {
 	return append(ms, pms...)
 }
 
-// func isPulsarHistogram(pm prometheus.SeriesSample) bool {
-// 	s := pm.Name()
-// 	return strings.HasPrefix(s, "pulsar_storage_write_latency") || strings.HasPrefix(s, "pulsar_entry_size")
-// }
+func scale(metric string) int {
+	switch metric {
+	case metricBoottimeBootTimeSeconds,
+		metricCPUTimesGuest,
+		metricCPUTimesGuestNice,
+		metricCPUTimesIdle,
+		metricCPUTimeIOWait,
+		metricCPUTimesIRQ,
+		metricCPUTimesNice,
+		metricCPUTimesSoftIRQ,
+		metricCPUTimesSteal,
+		metricCPUTimesSystem,
+		metricCPUTimesUser,
+		metricDiskIOCountersReadTime,
+		metricDiskIOCountersWriteTime:
+		// Metric is in seconds
+		return 1
+	case metricCPUCountCPUCount:
+		// Metric is a scalar
+		return 1
+	case metricCPUFreqCurrent:
+		// Metric is in Mhz, convert to Ghz
+		return 1000
+	case metricCPUPercentCPUPercent,
+		metricDiskUsagePercentUsed,
+		metricSwapMemoryUsedPercent,
+		metricVirtualMemoryUsedPercent:
+		// Metric is a percent scaled up by 100, so divide by 100
+		return 100
+	case metricDiskIOCountersReadBytes,
+		metricDiskIOCountersWriteBytes,
+		metricNetworkIOCountersBytesRecv,
+		metricNetworkIOCountersBytesSent:
+		// Metric is number of bytes, scale to KiB
+		return 1000
+	case metricDiskIOCountersReadCount,
+		metricDiskIOCountersWriteCount,
+		metricNetworkIOCountersDropIn,
+		metricNetworkIOCountersDropOut,
+		metricNetworkIOCountersErrIn,
+		metricNetworkIOCountersErrOut,
+		metricNetworkIOCountersPacketsRecv,
+		metricNetworkIOCountersPacketsSent,
+		metricSwapMemoryPgFault,
+		metricSwapMemoryPgIn,
+		metricSwapMemoryPgOut,
+		metricSwapMemorySin,
+		metricSwapMemorySout:
+		// Metric is number of events
+		return 1
+	case metricSwapMemoryFree,
+		metricSwapMemoryTotal,
+		metricSwapMemoryUsed,
+		metricVirtualMemoryActive,
+		metricVirtualMemoryAvailable,
+		metricVirtualMemoryFree,
+		metricVirtualMemoryInactive,
+		metricVirtualMemoryTotal,
+		metricVirtualMemoryUsed,
+		metricVirtualMemoryWired:
+		// Metric is number of memory bytes, scale to MiB
+		return 1024 * 1024
+	case metricDiskUsageFree,
+		metricDiskUsageTotal,
+		metricDiskUsageUsed:
+		// Metric is number of disk bytes, scale to GB
+		return 1000 * 1000 * 1000
+	default:
+		return 1
+	}
+}
 
 func precision(metric string) float64 {
 	switch metric {
@@ -129,22 +189,31 @@ func precision(metric string) float64 {
 		metricCPUTimesSoftIRQ,
 		metricCPUTimesSteal,
 		metricCPUTimesSystem,
-		metricCPUTimesUser:
-		return 1000
-	case metricCPUCountCPUCount,
-		metricCPUFreqCurrent:
+		metricCPUTimesUser,
+		metricDiskIOCountersReadTime,
+		metricDiskIOCountersWriteTime:
+		// Metric is in seconds
 		return 1
+	case metricCPUCountCPUCount:
+		// Metric is a scalar
+		return 1
+	case metricCPUFreqCurrent:
+		// Metric is in Mhz, convert to Ghz
+		return 1000
 	case metricCPUPercentCPUPercent,
-		metricDiskUsagePercentUsed:
+		metricDiskUsagePercentUsed,
+		metricSwapMemoryUsedPercent,
+		metricVirtualMemoryUsedPercent:
+		// Metric is a percent, scale up by 100
 		return 100
 	case metricDiskIOCountersReadBytes,
-		metricDiskIOCountersReadCount,
-		metricDiskIOCountersReadTime,
 		metricDiskIOCountersWriteBytes,
-		metricDiskIOCountersWriteCount,
-		metricDiskIOCountersWriteTime,
 		metricNetworkIOCountersBytesRecv,
-		metricNetworkIOCountersBytesSent,
+		metricNetworkIOCountersBytesSent:
+		// Metric is number of bytes, scale to KiB
+		return 1
+	case metricDiskIOCountersReadCount,
+		metricDiskIOCountersWriteCount,
 		metricNetworkIOCountersDropIn,
 		metricNetworkIOCountersDropOut,
 		metricNetworkIOCountersErrIn,
@@ -155,23 +224,27 @@ func precision(metric string) float64 {
 		metricSwapMemoryPgIn,
 		metricSwapMemoryPgOut,
 		metricSwapMemorySin,
-		metricSwapMemorySout,
-		metricSwapMemoryFree,
+		metricSwapMemorySout:
+		// Metric is number of events
+		return 1
+	case metricSwapMemoryFree,
 		metricSwapMemoryTotal,
 		metricSwapMemoryUsed,
-		metricSwapMemoryUsedPercent,
 		metricVirtualMemoryActive,
 		metricVirtualMemoryAvailable,
 		metricVirtualMemoryFree,
 		metricVirtualMemoryInactive,
 		metricVirtualMemoryTotal,
 		metricVirtualMemoryUsed,
-		metricVirtualMemoryUsedPercent,
-		metricVirtualMemoryWired,
-		metricDiskUsageFree,
+		metricVirtualMemoryWired:
+		// Metric is number of memory bytes
+		return 1
+	case metricDiskUsageFree,
 		metricDiskUsageTotal,
 		metricDiskUsageUsed:
-		return 1000000
+		// Metric is number of disk bytes
+		return 1
+	default:
+		return 1
 	}
-	return 1
 }

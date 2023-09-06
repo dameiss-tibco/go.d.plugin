@@ -35,7 +35,7 @@ func New() *MsgmonSys {
 	return &MsgmonSys{
 		Config:   config,
 		once:     &sync.Once{},
-		charts:   systemCharts.Copy(),
+		charts:   summaryCharts.Copy(),
 		cache:    newCache(),
 		curCache: newCache(),
 	}
@@ -44,15 +44,13 @@ func New() *MsgmonSys {
 type (
 	Config struct {
 		web.HTTP `yaml:",inline"`
-		// TopicFiler matcher.SimpleExpr `yaml:"topic_filter"`
 	}
 
 	MsgmonSys struct {
 		module.Base
 		Config `yaml:",inline"`
 
-		prom prometheus.Prometheus
-		// topicFilter matcher.Matcher
+		prom     prometheus.Prometheus
 		cache    *cache
 		curCache *cache
 		once     *sync.Once
@@ -88,20 +86,6 @@ func (p *MsgmonSys) initClient() error {
 	return nil
 }
 
-// func (p *MsgmonSys) initTopicFiler() error {
-// 	if p.TopicFiler.Empty() {
-// 		p.topicFilter = matcher.TRUE()
-// 		return nil
-// 	}
-
-// 	m, err := p.TopicFiler.Parse()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	p.topicFilter = m
-// 	return nil
-// }
-
 func (p *MsgmonSys) Init() bool {
 	if err := p.validateConfig(); err != nil {
 		p.Errorf("config validation: %v", err)
@@ -111,10 +95,6 @@ func (p *MsgmonSys) Init() bool {
 		p.Errorf("client initializing: %v", err)
 		return false
 	}
-	// if err := p.initTopicFiler(); err != nil {
-	// 	p.Errorf("topic filer initialization: %v", err)
-	// 	return false
-	// }
 	return true
 }
 
