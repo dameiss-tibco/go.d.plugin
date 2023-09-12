@@ -8,11 +8,12 @@ import (
 )
 
 type (
-	Charts = module.Charts
-	Chart  = module.Chart
-	Dims   = module.Dims
-	Dim    = module.Dim
-	Opts   = module.Opts
+	Charts  = module.Charts
+	Chart   = module.Chart
+	Dims    = module.Dims
+	Dim     = module.Dim
+	Opts    = module.Opts
+	DimOpts = module.DimOpts
 )
 
 var summaryCharts = Charts{
@@ -33,6 +34,7 @@ var (
 
 var systemCharts = Charts{
 	cpuTimesChart.Copy(),
+	cpuTimesIncrChart.Copy(),
 	cpuPercentChart.Copy(),
 	diskUsageChart.Copy(),
 	virtualMemoryChart.Copy(),
@@ -46,7 +48,7 @@ var (
 	cpuTimesChart = Chart{
 		ID:    "cpu_times_%s",
 		Title: "CPU Times",
-		Units: "ms increase/s",
+		Units: "s/s",
 		Fam:   "%s CPU",
 		Ctx:   "msgmonsys.cpu_times_%s",
 		Type:  module.Line,
@@ -55,6 +57,20 @@ var (
 			{ID: metricCPUTimesSystemRate + "_%s", Name: "system", Div: scale(metricCPUTimesSystemRate)},
 			{ID: metricCPUTimesUserRate + "_%s", Name: "user", Div: scale(metricCPUTimesUserRate)},
 			{ID: metricCPUTimesIdleRate + "_%s", Name: "idle", Div: scale(metricCPUTimesIdleRate)},
+		},
+	}
+	cpuTimesIncrChart = Chart{
+		ID:    "cpu_times_incr_%s",
+		Title: "CPU Times (incr)",
+		Units: "s/s",
+		Fam:   "%s CPU",
+		Ctx:   "msgmonsys.cpu_times_%s",
+		Type:  module.Line,
+		Opts:  Opts{StoreFirst: true},
+		Dims: Dims{
+			{ID: metricCPUTimesSystem + "_%s", Name: "system", Algo: module.Incremental, Div: scale(metricCPUTimesSystem)},
+			{ID: metricCPUTimesUser + "_%s", Name: "user", Algo: module.Incremental, Div: scale(metricCPUTimesUser)},
+			{ID: metricCPUTimesIdle + "_%s", Name: "idle", Algo: module.Incremental, Div: scale(metricCPUTimesIdle)},
 		},
 	}
 	cpuPercentChart = Chart{
@@ -67,6 +83,8 @@ var (
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
 			{ID: metricCPUPercentCPUPercent + "_%s", Name: "percent", Div: scale(metricCPUPercentCPUPercent)},
+			{ID: "cpupct_rate_0_%s", Name: "bottom", DimOpts: DimOpts{Hidden: true}},
+			{ID: "cpupct_rate_100_%s", Name: "top", DimOpts: DimOpts{Hidden: true}},
 		},
 	}
 	diskUsageChart = Chart{
@@ -84,7 +102,7 @@ var (
 	virtualMemoryChart = Chart{
 		ID:    "virtual_memory_%s",
 		Title: "Virtual Memory",
-		Units: "MiB",
+		Units: "B",
 		Fam:   "%s Virtual Memory",
 		Ctx:   "msgmonsys.virtual_memory_%s",
 		Type:  module.Line,

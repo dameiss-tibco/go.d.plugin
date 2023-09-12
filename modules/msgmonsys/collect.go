@@ -39,6 +39,8 @@ func (p *MsgmonSys) collectMetrics(pms prometheus.Series) map[string]float64 {
 		mx[pm.Name()+"_"+sys.name] += value
 
 		p.curCache.systems[sys] = true
+		mx["cpupct_rate_0_"+sys.name] = 0
+		mx["cpupct_rate_100_"+sys.name] = 100
 	}
 	return mx
 }
@@ -170,8 +172,8 @@ func scale(metric string) int {
 		metricCPUTimesStealRate,
 		metricCPUTimesSystemRate,
 		metricCPUTimesUserRate:
-		// Metric is in milliseconds per second
-		return 1
+		// Metric is in milliseconds per second, convert to seconds per second
+		return 1000
 	case metricDiskIOCountersReadBytes,
 		metricDiskIOCountersWriteBytes:
 		// Metric is in bytes
