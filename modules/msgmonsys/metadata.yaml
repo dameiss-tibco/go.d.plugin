@@ -22,8 +22,8 @@ modules:
       data_collection:
         metrics_description: |
           This collector monitors MSGMON System servers.
-        # method_description: |
-        #   It collects broker statistics using Pulsar's [Prometheus endpoint](https://pulsar.apache.org/docs/en/deploy-monitoring/#broker-stats).
+        method_description: |
+          It collects system statistics using an OpenMetrics endpoint.
       supported_platforms:
         include: []
         exclude: []
@@ -32,8 +32,8 @@ modules:
         description: ""
       default_behavior:
         auto_detection:
-          # description: |
-          #   By default, it detects Pulsar instances running on localhost.
+          description: |
+            By default, it detects Pulsar instances running on localhost on port 12345.
         limits:
           description: ""
         performance_impact:
@@ -61,7 +61,7 @@ modules:
               required: false
             - name: url
               description: Server URL.
-              default_value: http://127.0.0.1:8080/metrics
+              default_value: http://127.0.0.1:12345/metrics
               required: true
             - name: timeout
               description: HTTP request timeout.

@@ -46,15 +46,15 @@ var (
 	cpuTimesChart = Chart{
 		ID:    "cpu_times_%s",
 		Title: "CPU Times",
-		Units: "increase/s",
+		Units: "ms increase/s",
 		Fam:   "%s CPU",
 		Ctx:   "msgmonsys.cpu_times_%s",
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricCPUTimesSystem + "_%s", Name: "system", Algo: module.Incremental, Div: scale(metricCPUTimesSystem)},
-			{ID: metricCPUTimesUser + "_%s", Name: "user", Algo: module.Incremental, Div: scale(metricCPUTimesUser)},
-			{ID: metricCPUTimesIdle + "_%s", Name: "idle", Algo: module.Incremental, Div: scale(metricCPUTimesIdle)},
+			{ID: metricCPUTimesSystemRate + "_%s", Name: "system", Div: scale(metricCPUTimesSystemRate)},
+			{ID: metricCPUTimesUserRate + "_%s", Name: "user", Div: scale(metricCPUTimesUserRate)},
+			{ID: metricCPUTimesIdleRate + "_%s", Name: "idle", Div: scale(metricCPUTimesIdleRate)},
 		},
 	}
 	cpuPercentChart = Chart{

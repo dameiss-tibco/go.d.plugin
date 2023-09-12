@@ -35,7 +35,7 @@ func (p *MsgmonSys) collectMetrics(pms prometheus.Series) map[string]float64 {
 			continue
 		}
 
-		value := pm.Value * precision(pm.Name())
+		value := pm.Value * multiplier(pm.Name())
 		mx[pm.Name()+"_"+sys.name] += value
 
 		p.curCache.systems[sys] = true
@@ -57,38 +57,67 @@ func findMsgmonSysMetrics(pms prometheus.Series) prometheus.Series {
 		metricCPUFreqCurrent,
 		metricCPUPercentCPUPercent,
 		metricCPUTimesGuest,
+		metricCPUTimesGuestRate,
 		metricCPUTimesGuestNice,
+		metricCPUTimesGuestNiceRate,
 		metricCPUTimesIdle,
+		metricCPUTimesIdleRate,
 		metricCPUTimeIOWait,
+		metricCPUTimeIOWaitRate,
 		metricCPUTimesIRQ,
+		metricCPUTimesIRQRate,
 		metricCPUTimesNice,
+		metricCPUTimesNiceRate,
 		metricCPUTimesSoftIRQ,
+		metricCPUTimesSoftIRQRate,
 		metricCPUTimesSteal,
+		metricCPUTimesStealRate,
 		metricCPUTimesSystem,
+		metricCPUTimesSystemRate,
 		metricCPUTimesUser,
+		metricCPUTimesUserRate,
 		metricDiskIOCountersReadBytes,
+		metricDiskIOCountersReadBytesRate,
 		metricDiskIOCountersReadCount,
+		metricDiskIOCountersReadCountRate,
 		metricDiskIOCountersReadTime,
+		metricDiskIOCountersReadTimeRate,
 		metricDiskIOCountersWriteBytes,
+		metricDiskIOCountersWriteBytesRate,
 		metricDiskIOCountersWriteCount,
+		metricDiskIOCountersWriteCountRate,
 		metricDiskIOCountersWriteTime,
+		metricDiskIOCountersWriteTimeRate,
 		metricDiskUsageFree,
 		metricDiskUsagePercentUsed,
 		metricDiskUsageTotal,
 		metricDiskUsageUsed,
 		metricNetworkIOCountersBytesRecv,
+		metricNetworkIOCountersBytesRecvRate,
 		metricNetworkIOCountersBytesSent,
+		metricNetworkIOCountersBytesSentRate,
 		metricNetworkIOCountersDropIn,
+		metricNetworkIOCountersDropInRate,
 		metricNetworkIOCountersDropOut,
+		metricNetworkIOCountersDropOutRate,
 		metricNetworkIOCountersErrIn,
+		metricNetworkIOCountersErrInRate,
 		metricNetworkIOCountersErrOut,
+		metricNetworkIOCountersErrOutRate,
 		metricNetworkIOCountersPacketsRecv,
+		metricNetworkIOCountersPacketsRecvRate,
 		metricNetworkIOCountersPacketsSent,
+		metricNetworkIOCountersPacketsSentRate,
 		metricSwapMemoryPgFault,
+		metricSwapMemoryPgFaultRate,
 		metricSwapMemoryPgIn,
+		metricSwapMemoryPgInRate,
 		metricSwapMemoryPgOut,
+		metricSwapMemoryPgOutRate,
 		metricSwapMemorySin,
+		metricSwapMemorySinRate,
 		metricSwapMemorySout,
+		metricSwapMemorySoutRate,
 		metricSwapMemoryFree,
 		metricSwapMemoryTotal,
 		metricSwapMemoryUsed,
@@ -107,8 +136,19 @@ func findMsgmonSysMetrics(pms prometheus.Series) prometheus.Series {
 
 func scale(metric string) int {
 	switch metric {
-	case metricBoottimeBootTimeSeconds,
-		metricCPUTimesGuest,
+	case metricBoottimeBootTimeSeconds:
+		// Metric is in integer seconds
+		return 1
+	case metricCPUCountCPUCount:
+		// Metric is a scalar
+		return 1
+	case metricCPUFreqCurrent:
+		// Metric is in Mhz, convert to Ghz
+		return 1000
+	case metricCPUPercentCPUPercent:
+		// Metric is a floating-point percentage multiplied by 100, scale back to percentage
+		return 100
+	case metricCPUTimesGuest,
 		metricCPUTimesGuestNice,
 		metricCPUTimesIdle,
 		metricCPUTimeIOWait,
@@ -117,70 +157,131 @@ func scale(metric string) int {
 		metricCPUTimesSoftIRQ,
 		metricCPUTimesSteal,
 		metricCPUTimesSystem,
-		metricCPUTimesUser,
-		metricDiskIOCountersReadTime,
-		metricDiskIOCountersWriteTime:
-		// Metric is in seconds
-		return 1
-	case metricCPUCountCPUCount:
-		// Metric is a scalar
-		return 1
-	case metricCPUFreqCurrent:
-		// Metric is in Mhz, convert to Ghz
-		return 1000
-	case metricCPUPercentCPUPercent,
-		metricDiskUsagePercentUsed,
-		metricSwapMemoryUsedPercent,
-		metricVirtualMemoryUsedPercent:
-		// Metric is a percent scaled up by 100, so divide by 100
+		metricCPUTimesUser:
+		// Metric is in seconds multiplied by 100, scale back to original value
 		return 100
+	case metricCPUTimesGuestRate,
+		metricCPUTimesGuestNiceRate,
+		metricCPUTimesIdleRate,
+		metricCPUTimeIOWaitRate,
+		metricCPUTimesIRQRate,
+		metricCPUTimesNiceRate,
+		metricCPUTimesSoftIRQRate,
+		metricCPUTimesStealRate,
+		metricCPUTimesSystemRate,
+		metricCPUTimesUserRate:
+		// Metric is in milliseconds per second
+		return 1
 	case metricDiskIOCountersReadBytes,
-		metricDiskIOCountersWriteBytes,
-		metricNetworkIOCountersBytesRecv,
-		metricNetworkIOCountersBytesSent:
-		// Metric is number of bytes, scale to KiB
-		return 1000
+		metricDiskIOCountersWriteBytes:
+		// Metric is in bytes
+		return 1
 	case metricDiskIOCountersReadCount,
-		metricDiskIOCountersWriteCount,
-		metricNetworkIOCountersDropIn,
+		metricDiskIOCountersWriteCount:
+		// Metric is in operations
+		return 1
+	case metricDiskIOCountersReadBytesRate,
+		metricDiskIOCountersWriteBytesRate:
+		// Metric is in bytes per second multiplied by 100 for additional precision, scale back to original
+		return 100
+	case metricDiskIOCountersReadTime,
+		metricDiskIOCountersWriteTime:
+		// Metric is in milliseconds per second
+		return 1
+	case metricDiskIOCountersReadCountRate,
+		metricDiskIOCountersWriteCountRate:
+		// Metric is in operations per second multiplied by 100 for additional precision, scale back to original
+		return 100
+	case metricDiskIOCountersReadTimeRate,
+		metricDiskIOCountersWriteTimeRate:
+		// Metric is in milliseconds per second
+		return 1
+	case metricDiskUsageFree,
+		metricDiskUsageTotal,
+		metricDiskUsageUsed:
+		// Metric is in bytes, scale to MB
+		return 1000 * 1000
+	case metricDiskUsagePercentUsed:
+		// Metric is a floating-point percentage multiplied by 100 to get additional precision, scale back to percentage
+		return 100
+	case metricNetworkIOCountersBytesRecv,
+		metricNetworkIOCountersBytesSent:
+		// Metric is in bytes, scale to kB
+		return 1000
+	case metricNetworkIOCountersBytesRecvRate,
+		metricNetworkIOCountersBytesSentRate:
+		// Metric is in bytes per second multiplied by 100 for additional precision, scale back to original
+		return 100
+	case metricNetworkIOCountersDropIn,
 		metricNetworkIOCountersDropOut,
 		metricNetworkIOCountersErrIn,
 		metricNetworkIOCountersErrOut,
 		metricNetworkIOCountersPacketsRecv,
-		metricNetworkIOCountersPacketsSent,
-		metricSwapMemoryPgFault,
+		metricNetworkIOCountersPacketsSent:
+		// Metric is in packets
+		return 1
+	case metricNetworkIOCountersDropInRate,
+		metricNetworkIOCountersDropOutRate,
+		metricNetworkIOCountersErrInRate,
+		metricNetworkIOCountersErrOutRate,
+		metricNetworkIOCountersPacketsRecvRate,
+		metricNetworkIOCountersPacketsSentRate:
+		// Metric is in packets per second multiplied by 100 for additional precision, scale back to original
+		return 100
+	case metricSwapMemoryPgFault,
 		metricSwapMemoryPgIn,
 		metricSwapMemoryPgOut,
 		metricSwapMemorySin,
 		metricSwapMemorySout:
-		// Metric is number of events
+		// Metric is in operations
 		return 1
+	case metricSwapMemoryPgFaultRate,
+		metricSwapMemoryPgInRate,
+		metricSwapMemoryPgOutRate,
+		metricSwapMemorySinRate,
+		metricSwapMemorySoutRate:
+		// Metric is in operations per second multiplied by 100 for additional precision, scale back to original
+		return 100
 	case metricSwapMemoryFree,
 		metricSwapMemoryTotal,
-		metricSwapMemoryUsed,
-		metricVirtualMemoryActive,
+		metricSwapMemoryUsed:
+		// Metric is in bytes
+		return 1
+	case metricSwapMemoryUsedPercent:
+		// Metric is a percentage multiplied by 100 for additional precision, scale back to original
+		return 100
+	case metricVirtualMemoryActive,
 		metricVirtualMemoryAvailable,
 		metricVirtualMemoryFree,
 		metricVirtualMemoryInactive,
 		metricVirtualMemoryTotal,
 		metricVirtualMemoryUsed,
 		metricVirtualMemoryWired:
-		// Metric is number of memory bytes, scale to MiB
-		return 1024 * 1024
-	case metricDiskUsageFree,
-		metricDiskUsageTotal,
-		metricDiskUsageUsed:
-		// Metric is number of disk bytes, scale to GB
-		return 1000 * 1000 * 1000
+		// Metric is in bytes
+		return 1
+	case metricVirtualMemoryUsedPercent:
+		// Metric is a percentage multiplied by 100 for additional precision, scale back to original
+		return 100
 	default:
 		return 1
 	}
 }
 
-func precision(metric string) float64 {
+func multiplier(metric string) float64 {
 	switch metric {
-	case metricBoottimeBootTimeSeconds,
-		metricCPUTimesGuest,
+	case metricBoottimeBootTimeSeconds:
+		// Metric is in integer seconds
+		return 1
+	case metricCPUCountCPUCount:
+		// Metric is a scalar
+		return 1
+	case metricCPUFreqCurrent:
+		// Metric is in Mhz
+		return 1
+	case metricCPUPercentCPUPercent:
+		// Metric is a floating-point percentage, multiply by 100 to get additional precision
+		return 100
+	case metricCPUTimesGuest,
 		metricCPUTimesGuestNice,
 		metricCPUTimesIdle,
 		metricCPUTimeIOWait,
@@ -189,61 +290,111 @@ func precision(metric string) float64 {
 		metricCPUTimesSoftIRQ,
 		metricCPUTimesSteal,
 		metricCPUTimesSystem,
-		metricCPUTimesUser,
-		metricDiskIOCountersReadTime,
-		metricDiskIOCountersWriteTime:
-		// Metric is in seconds
-		return 1
-	case metricCPUCountCPUCount:
-		// Metric is a scalar
-		return 1
-	case metricCPUFreqCurrent:
-		// Metric is in Mhz, convert to Ghz
-		return 1000
-	case metricCPUPercentCPUPercent,
-		metricDiskUsagePercentUsed,
-		metricSwapMemoryUsedPercent,
-		metricVirtualMemoryUsedPercent:
-		// Metric is a percent, scale up by 100
+		metricCPUTimesUser:
+		// Metric is in seconds, multiply by 100 to get additional precision
 		return 100
+	case metricCPUTimesGuestRate,
+		metricCPUTimesGuestNiceRate,
+		metricCPUTimesIdleRate,
+		metricCPUTimeIOWaitRate,
+		metricCPUTimesIRQRate,
+		metricCPUTimesNiceRate,
+		metricCPUTimesSoftIRQRate,
+		metricCPUTimesStealRate,
+		metricCPUTimesSystemRate,
+		metricCPUTimesUserRate:
+		// Metric is in seconds per second, multiply by 1000 to get milliseconds per second
+		return 1000
 	case metricDiskIOCountersReadBytes,
-		metricDiskIOCountersWriteBytes,
-		metricNetworkIOCountersBytesRecv,
-		metricNetworkIOCountersBytesSent:
-		// Metric is number of bytes, scale to KiB
+		metricDiskIOCountersWriteBytes:
+		// Metric is in bytes
 		return 1
 	case metricDiskIOCountersReadCount,
-		metricDiskIOCountersWriteCount,
-		metricNetworkIOCountersDropIn,
+		metricDiskIOCountersWriteCount:
+		// Metric is in operations
+		return 1
+	case metricDiskIOCountersReadBytesRate,
+		metricDiskIOCountersWriteBytesRate:
+		// Metric is in bytes per second, multiply by 100 for additional precision
+		return 100
+	case metricDiskIOCountersReadTime,
+		metricDiskIOCountersWriteTime:
+		// Metric is in seconds per second, multiply by 1000 to get milliseconds per second
+		return 1000
+	case metricDiskIOCountersReadCountRate,
+		metricDiskIOCountersWriteCountRate:
+		// Metric is in operations per second, multiply by 100 for additional precision
+		return 100
+	case metricDiskIOCountersReadTimeRate,
+		metricDiskIOCountersWriteTimeRate:
+		// Metric is in seconds per second, multiply by 1000 to get milliseconds per second
+		return 1000
+	case metricDiskUsageFree,
+		metricDiskUsageTotal,
+		metricDiskUsageUsed:
+		// Metric is in bytes
+		return 1
+	case metricDiskUsagePercentUsed:
+		// Metric is a floating-point percentage, multiply by 100 to get additional precision
+		return 100
+	case metricNetworkIOCountersBytesRecv,
+		metricNetworkIOCountersBytesSent:
+		// Metric is in bytes
+		return 1
+	case metricNetworkIOCountersBytesRecvRate,
+		metricNetworkIOCountersBytesSentRate:
+		// Metric is in bytes per second, multiply by 100 for additional precision
+		return 100
+	case metricNetworkIOCountersDropIn,
 		metricNetworkIOCountersDropOut,
 		metricNetworkIOCountersErrIn,
 		metricNetworkIOCountersErrOut,
 		metricNetworkIOCountersPacketsRecv,
-		metricNetworkIOCountersPacketsSent,
-		metricSwapMemoryPgFault,
+		metricNetworkIOCountersPacketsSent:
+		// Metric is in packets
+		return 1
+	case metricNetworkIOCountersDropInRate,
+		metricNetworkIOCountersDropOutRate,
+		metricNetworkIOCountersErrInRate,
+		metricNetworkIOCountersErrOutRate,
+		metricNetworkIOCountersPacketsRecvRate,
+		metricNetworkIOCountersPacketsSentRate:
+		// Metric is in packets per second, multiply by 100 for additional precision
+		return 100
+	case metricSwapMemoryPgFault,
 		metricSwapMemoryPgIn,
 		metricSwapMemoryPgOut,
 		metricSwapMemorySin,
 		metricSwapMemorySout:
-		// Metric is number of events
+		// Metric is in operations
 		return 1
+	case metricSwapMemoryPgFaultRate,
+		metricSwapMemoryPgInRate,
+		metricSwapMemoryPgOutRate,
+		metricSwapMemorySinRate,
+		metricSwapMemorySoutRate:
+		// Metric is in operations per second, multiply by 100 for additional precision
+		return 100
 	case metricSwapMemoryFree,
 		metricSwapMemoryTotal,
-		metricSwapMemoryUsed,
-		metricVirtualMemoryActive,
+		metricSwapMemoryUsed:
+		// Metric is in bytes
+		return 1
+	case metricSwapMemoryUsedPercent:
+		// Metric is a percentage, multiply by 100 for additional precision
+		return 100
+	case metricVirtualMemoryActive,
 		metricVirtualMemoryAvailable,
 		metricVirtualMemoryFree,
 		metricVirtualMemoryInactive,
 		metricVirtualMemoryTotal,
 		metricVirtualMemoryUsed,
 		metricVirtualMemoryWired:
-		// Metric is number of memory bytes
+		// Metric is in bytes
 		return 1
-	case metricDiskUsageFree,
-		metricDiskUsageTotal,
-		metricDiskUsageUsed:
-		// Metric is number of disk bytes
-		return 1
+	case metricVirtualMemoryUsedPercent:
+		// Metric is a percentage, multiply by 100 for additional precision
+		return 100
 	default:
 		return 1
 	}
