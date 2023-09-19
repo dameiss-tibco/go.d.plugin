@@ -33,15 +33,20 @@ var (
 )
 
 var systemCharts = Charts{
-	cpuTimesChart.Copy(),
+	// cpuTimesChart.Copy(),
 	cpuTimesIncrChart.Copy(),
+	// cpuTimesRawChart.Copy(),
 	cpuPercentChart.Copy(),
 	diskUsageChart.Copy(),
 	virtualMemoryChart.Copy(),
-	diskIODataChart.Copy(),
-	diskIOOperationChart.Copy(),
-	networkIODataChart.Copy(),
-	networkIOOperationChart.Copy(),
+	// diskIODataChart.Copy(),
+	diskIODataIncrChart.Copy(),
+	// diskIOOperationChart.Copy(),
+	diskIOOperationIncrChart.Copy(),
+	// networkIODataChart.Copy(),
+	networkIODataIncrChart.Copy(),
+	// networkIOOperationChart.Copy(),
+	networkIOOperationIncrChart.Copy(),
 }
 
 var (
@@ -49,54 +54,68 @@ var (
 		ID:    "cpu_times_%s",
 		Title: "CPU Times",
 		Units: "s/s",
-		Fam:   "%s CPU",
+		Fam:   "%s CPU Times",
 		Ctx:   "msgmonsys.cpu_times_%s",
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricCPUTimesSystemRate + "_%s", Name: "system", Div: scale(metricCPUTimesSystemRate)},
-			{ID: metricCPUTimesUserRate + "_%s", Name: "user", Div: scale(metricCPUTimesUserRate)},
-			{ID: metricCPUTimesIdleRate + "_%s", Name: "idle", Div: scale(metricCPUTimesIdleRate)},
+			{ID: metricCPUTimesSystemRate + "_%s", Name: "System", Div: scale(metricCPUTimesSystemRate)},
+			{ID: metricCPUTimesUserRate + "_%s", Name: "User", Div: scale(metricCPUTimesUserRate)},
+			{ID: metricCPUTimesIdleRate + "_%s", Name: "Idle", Div: scale(metricCPUTimesIdleRate)},
 		},
 	}
 	cpuTimesIncrChart = Chart{
 		ID:    "cpu_times_incr_%s",
-		Title: "CPU Times (incr)",
+		Title: "CPU Times (Incr)",
 		Units: "s/s",
-		Fam:   "%s CPU",
-		Ctx:   "msgmonsys.cpu_times_%s",
+		Fam:   "%s CPU Times",
+		Ctx:   "msgmonsys.cpu_times_incr_%s",
+		Type:  module.Area,
+		Opts:  Opts{StoreFirst: true},
+		Dims: Dims{
+			{ID: metricCPUTimesSystem + "_%s", Name: "System", Algo: module.Incremental, Div: scale(metricCPUTimesSystem)},
+			{ID: metricCPUTimesUser + "_%s", Name: "User", Algo: module.Incremental, Div: scale(metricCPUTimesUser)},
+			{ID: metricCPUTimesIdle + "_%s", Name: "Idle", Algo: module.Incremental, Div: scale(metricCPUTimesIdle)},
+		},
+	}
+	cpuTimesRawChart = Chart{
+		ID:    "cpu_times_raw_%s",
+		Title: "CPU Times (Raw)",
+		Units: "seconds",
+		Fam:   "%s CPU Times",
+		Ctx:   "msgmonsys.cpu_times_raw_%s",
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricCPUTimesSystem + "_%s", Name: "system", Algo: module.Incremental, Div: scale(metricCPUTimesSystem)},
-			{ID: metricCPUTimesUser + "_%s", Name: "user", Algo: module.Incremental, Div: scale(metricCPUTimesUser)},
-			{ID: metricCPUTimesIdle + "_%s", Name: "idle", Algo: module.Incremental, Div: scale(metricCPUTimesIdle)},
+			{ID: metricCPUTimesSystem + "_%s", Name: "System", Div: scale(metricCPUTimesSystem)},
+			{ID: metricCPUTimesUser + "_%s", Name: "User", Div: scale(metricCPUTimesUser)},
+			{ID: metricCPUTimesIdle + "_%s", Name: "Idle", Div: scale(metricCPUTimesIdle)},
 		},
 	}
 	cpuPercentChart = Chart{
 		ID:    "cpu_percent_%s",
 		Title: "CPU Percent",
 		Units: "percentage",
-		Fam:   "%s CPU",
+		Fam:   "%s CPU Percent",
 		Ctx:   "msgmonsys.cpu_percent_%s",
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricCPUPercentCPUPercent + "_%s", Name: "percent", Div: scale(metricCPUPercentCPUPercent)},
-			{ID: "cpupct_rate_0_%s", Name: "bottom", DimOpts: DimOpts{Hidden: true}},
-			{ID: "cpupct_rate_100_%s", Name: "top", DimOpts: DimOpts{Hidden: true}},
+			{ID: metricCPUPercentCPUPercent + "_%s", Name: "Percent", Div: scale(metricCPUPercentCPUPercent)},
+			// {ID: "cpupct_rate_0_%s", Name: "bottom", DimOpts: DimOpts{Hidden: true}},
+			// {ID: "cpupct_rate_100_%s", Name: "top", DimOpts: DimOpts{Hidden: true}},
 		},
 	}
 	diskUsageChart = Chart{
 		ID:    "disk_usage_%s",
 		Title: "Disk Usage Percent",
-		Units: "percentage",
+		Units: "percent",
 		Fam:   "%s Disk Usage",
 		Ctx:   "msgmonsys.disk_usage_percent_%s",
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricDiskUsagePercentUsed + "_%s", Name: "percent", Div: scale(metricDiskUsagePercentUsed)},
+			{ID: metricDiskUsagePercentUsed + "_%s", Name: "Percent", Div: scale(metricDiskUsagePercentUsed)},
 		},
 	}
 	virtualMemoryChart = Chart{
@@ -108,21 +127,34 @@ var (
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricVirtualMemoryAvailable + "_%s", Name: "available", Div: scale(metricVirtualMemoryAvailable)},
-			{ID: metricVirtualMemoryUsed + "_%s", Name: "used", Div: scale(metricVirtualMemoryUsed)},
+			{ID: metricVirtualMemoryAvailable + "_%s", Name: "Available", Div: scale(metricVirtualMemoryAvailable)},
+			{ID: metricVirtualMemoryUsed + "_%s", Name: "Used", Div: scale(metricVirtualMemoryUsed)},
 		},
 	}
 	diskIODataChart = Chart{
 		ID:    "disk_io_data_rate_%s",
 		Title: "Disk I/O Data Rates",
-		Units: "kiB/s",
+		Units: "B/s",
 		Fam:   "%s Disk I/O",
 		Ctx:   "msgmonsys.disk_io_data_rate_%s",
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricDiskIOCountersReadBytes + "_%s", Name: "read", Algo: module.Incremental, Div: scale(metricDiskIOCountersReadBytes)},
-			{ID: metricDiskIOCountersWriteBytes + "_%s", Name: "write", Algo: module.Incremental, Div: scale(metricDiskIOCountersWriteBytes)},
+			{ID: metricDiskIOCountersReadBytesRate + "_%s", Name: "Read", Div: scale(metricDiskIOCountersReadBytesRate)},
+			{ID: metricDiskIOCountersWriteBytesRate + "_%s", Name: "Write", Div: scale(metricDiskIOCountersWriteBytesRate)},
+		},
+	}
+	diskIODataIncrChart = Chart{
+		ID:    "disk_io_data_rate_incr_%s",
+		Title: "Disk I/O Data Rates Incr",
+		Units: "B/s",
+		Fam:   "%s Disk I/O",
+		Ctx:   "msgmonsys.disk_io_data_rate_incr_%s",
+		Type:  module.Area,
+		Opts:  Opts{StoreFirst: true},
+		Dims: Dims{
+			{ID: metricDiskIOCountersReadBytes + "_%s", Name: "Read", Algo: module.Incremental, Div: scale(metricDiskIOCountersReadBytes)},
+			{ID: metricDiskIOCountersWriteBytes + "_%s", Name: "Write", Algo: module.Incremental, Div: scale(metricDiskIOCountersWriteBytes)},
 		},
 	}
 	diskIOOperationChart = Chart{
@@ -134,21 +166,47 @@ var (
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricDiskIOCountersReadCount + "_%s", Name: "read", Algo: module.Incremental, Div: scale(metricDiskIOCountersReadCount)},
-			{ID: metricDiskIOCountersWriteCount + "_%s", Name: "write", Algo: module.Incremental, Div: scale(metricDiskIOCountersWriteCount)},
+			{ID: metricDiskIOCountersReadCountRate + "_%s", Name: "Read", Div: scale(metricDiskIOCountersReadCountRate)},
+			{ID: metricDiskIOCountersWriteCountRate + "_%s", Name: "Write", Div: scale(metricDiskIOCountersWriteCountRate)},
+		},
+	}
+	diskIOOperationIncrChart = Chart{
+		ID:    "disk_io_operation_rate_incr_%s",
+		Title: "Disk I/O Operation Rates",
+		Units: "ops/s",
+		Fam:   "%s Disk I/O",
+		Ctx:   "msgmonsys.disk_io_operation_rate_incr_%s",
+		Type:  module.Area,
+		Opts:  Opts{StoreFirst: true},
+		Dims: Dims{
+			{ID: metricDiskIOCountersReadCount + "_%s", Name: "Read", Algo: module.Incremental, Div: scale(metricDiskIOCountersReadCount)},
+			{ID: metricDiskIOCountersWriteCount + "_%s", Name: "Write", Algo: module.Incremental, Div: scale(metricDiskIOCountersWriteCount)},
 		},
 	}
 	networkIODataChart = Chart{
 		ID:    "network_io_data_rate_%s",
 		Title: "Network I/O Data Rates",
-		Units: "kiB/s",
+		Units: "B/s",
 		Fam:   "%s Network I/O",
 		Ctx:   "msgmonsys.network_io_data_rate_%s",
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricNetworkIOCountersBytesRecv + "_%s", Name: "recv", Algo: module.Incremental, Div: scale(metricNetworkIOCountersBytesRecv)},
-			{ID: metricNetworkIOCountersBytesSent + "_%s", Name: "send", Algo: module.Incremental, Div: scale(metricNetworkIOCountersBytesSent)},
+			{ID: metricNetworkIOCountersBytesRecvRate + "_%s", Name: "Receive", Div: scale(metricNetworkIOCountersBytesRecvRate)},
+			{ID: metricNetworkIOCountersBytesSentRate + "_%s", Name: "Send", Div: scale(metricNetworkIOCountersBytesSentRate)},
+		},
+	}
+	networkIODataIncrChart = Chart{
+		ID:    "network_io_data_rate_incr_%s",
+		Title: "Network I/O Data Rates",
+		Units: "B/s",
+		Fam:   "%s Network I/O",
+		Ctx:   "msgmonsys.network_io_data_rate_incr_%s",
+		Type:  module.Area,
+		Opts:  Opts{StoreFirst: true},
+		Dims: Dims{
+			{ID: metricNetworkIOCountersBytesRecv + "_%s", Name: "Receive", Algo: module.Incremental, Div: scale(metricNetworkIOCountersBytesRecv)},
+			{ID: metricNetworkIOCountersBytesSent + "_%s", Name: "Send", Algo: module.Incremental, Div: scale(metricNetworkIOCountersBytesSent)},
 		},
 	}
 	networkIOOperationChart = Chart{
@@ -160,8 +218,21 @@ var (
 		Type:  module.Line,
 		Opts:  Opts{StoreFirst: true},
 		Dims: Dims{
-			{ID: metricNetworkIOCountersPacketsRecv + "_%s", Name: "recv", Algo: module.Incremental, Div: scale(metricNetworkIOCountersPacketsRecv)},
-			{ID: metricNetworkIOCountersPacketsSent + "_%s", Name: "send", Algo: module.Incremental, Div: scale(metricNetworkIOCountersPacketsSent)},
+			{ID: metricNetworkIOCountersPacketsRecvRate + "_%s", Name: "Receive", Div: scale(metricNetworkIOCountersPacketsRecvRate)},
+			{ID: metricNetworkIOCountersPacketsSentRate + "_%s", Name: "Send", Div: scale(metricNetworkIOCountersPacketsSentRate)},
+		},
+	}
+	networkIOOperationIncrChart = Chart{
+		ID:    "network_io_operation_rate_incr_%s",
+		Title: "Network IO Operation Rates",
+		Units: "packets/s",
+		Fam:   "%s Network I/O",
+		Ctx:   "msgmonsys.network_io_operation_rate_incr_%s",
+		Type:  module.Area,
+		Opts:  Opts{StoreFirst: true},
+		Dims: Dims{
+			{ID: metricNetworkIOCountersPacketsRecv + "_%s", Name: "Receive", Algo: module.Incremental, Div: scale(metricNetworkIOCountersPacketsRecv)},
+			{ID: metricNetworkIOCountersPacketsSent + "_%s", Name: "Send", Algo: module.Incremental, Div: scale(metricNetworkIOCountersPacketsSent)},
 		},
 	}
 )
