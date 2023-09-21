@@ -48,9 +48,9 @@ var (
 		ID:    "cputimes_%s",
 		Title: "CPU Times",
 		Units: "s/s",
-		Fam:   "%s CPU Times",
+		Fam:   "cputimes.%s",
 		// Ctx:   "msgmonsys.cputimes_%s",
-		Ctx:  "msgmonsys.cputimes",
+		Ctx:  "cputimes",
 		Type: module.Area,
 		Opts: Opts{StoreFirst: true},
 		Dims: Dims{
@@ -63,9 +63,9 @@ var (
 		ID:    "cpupercent_%s",
 		Title: "CPU Percent",
 		Units: "percent",
-		Fam:   "%s CPU Percent",
+		Fam:   "cpupercent.%s",
 		// Ctx:   "msgmonsys.cpupercent_%s",
-		Ctx:  "msgmonsys.cpupercent",
+		Ctx:  "cpupercent",
 		Type: module.Line,
 		Opts: Opts{StoreFirst: true},
 		Dims: Dims{
@@ -74,11 +74,11 @@ var (
 	}
 	diskUsageChart = Chart{
 		ID:    "diskusage_%s",
-		Title: "Disk Usage Percent",
+		Title: "Disk Usage",
 		Units: "percent",
-		Fam:   "%s Disk Usage",
+		Fam:   "diskusage.%s",
 		// Ctx:   "msgmonsys.diskusage_percent_%s",
-		Ctx:  "msgmonsys.diskusage_percent",
+		Ctx:  "diskusage",
 		Type: module.Line,
 		Opts: Opts{StoreFirst: true},
 		Dims: Dims{
@@ -89,9 +89,9 @@ var (
 		ID:    "virtualmemory_%s",
 		Title: "Virtual Memory",
 		Units: "B",
-		Fam:   "%s Virtual Memory",
+		Fam:   "virtualmemory.%s",
 		// Ctx:   "msgmonsys.virtualmemory_%s",
-		Ctx:  "msgmonsys.virtualmemory",
+		Ctx:  "virtualmemory",
 		Type: module.Line,
 		Opts: Opts{StoreFirst: true},
 		Dims: Dims{
@@ -103,9 +103,9 @@ var (
 		ID:    "diskio_datarate_%s",
 		Title: "Disk I/O Data Rates",
 		Units: "B/s",
-		Fam:   "%s Disk I/O",
+		Fam:   "diskio_datarate.%s",
 		// Ctx:   "msgmonsys.disk_io_data_rate_incr_%s",
-		Ctx:  "msgmonsys.diskio_datarate",
+		Ctx:  "diskio.datarate",
 		Type: module.Area,
 		Opts: Opts{StoreFirst: true},
 		Dims: Dims{
@@ -117,9 +117,9 @@ var (
 		ID:    "diskio_operationrate_%s",
 		Title: "Disk I/O Operation Rates",
 		Units: "ops/s",
-		Fam:   "%s Disk I/O",
+		Fam:   "diskio_operationrate.%s",
 		// Ctx:   "msgmonsys.diskio_operationrate_%s",
-		Ctx:  "msgmonsys.diskio_operationrate",
+		Ctx:  "diskio.operationrate",
 		Type: module.Area,
 		Opts: Opts{StoreFirst: true},
 		Dims: Dims{
@@ -131,9 +131,9 @@ var (
 		ID:    "networkio_datarate_%s",
 		Title: "Network I/O Data Rates",
 		Units: "B/s",
-		Fam:   "%s Network I/O",
+		Fam:   "networkio.datarate.%s",
 		// Ctx:   "msgmonsys.networkio_datarate_%s",
-		Ctx:  "msgmonsys.networkio_datarate",
+		Ctx:  "networkio.datarate",
 		Type: module.Area,
 		Opts: Opts{StoreFirst: true},
 		Dims: Dims{
@@ -145,9 +145,9 @@ var (
 		ID:    "networkio_operationrate_%s",
 		Title: "Network IO Operation Rates",
 		Units: "packets/s",
-		Fam:   "%s Network I/O",
+		Fam:   "networkio_operationrate.%s",
 		// Ctx:   "msgmonsys.networkio_operationrate_%s",
-		Ctx:  "msgmonsys.networkio_operationrate",
+		Ctx:  "networkio.operationrate",
 		Type: module.Area,
 		Opts: Opts{StoreFirst: true},
 		Dims: Dims{
@@ -180,9 +180,10 @@ func (p *MsgmonSys) updateCharts() {
 func (p *MsgmonSys) addSystemCharts(s systemName) {
 	charts := systemCharts.Copy()
 	for _, chart := range *charts {
+		// chart.Title = fmt.Sprintf(chart.Title, s.name)
 		chart.ID = fmt.Sprintf(chart.ID, s.name)
 		chart.Fam = fmt.Sprintf(chart.Fam, s.name)
-		chart.Ctx = fmt.Sprintf(chart.Ctx, s.name)
+		// chart.Ctx = fmt.Sprintf(chart.Ctx, s.name)
 		for _, dim := range chart.Dims {
 			dim.ID = fmt.Sprintf(dim.ID, s.name)
 		}
